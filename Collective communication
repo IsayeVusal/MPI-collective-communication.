@@ -1,0 +1,41 @@
+from mpi4py import MPI
+import numpy as np
+
+V=100 #size of matrix
+row=3 #rows
+column=3 #columns
+Matrix1 = (np.random.randint (100,size=[V,V]))
+Matrix2 = (np.random.randint (100,size=[V,V]))
+R = np.zeros([V,V],int)
+
+# creation of matrix multiplication function 
+
+def multiplication(startindex,endindex):
+    for i in range(startindex,endindex):
+        for j in range (len(Matrix1[0])):
+            for k in range (len(Matrix1[0])):
+                R[i][j]=Matrix1[i][k]*Matrix2[k][j] 
+    return R
+
+#dividing the rows of the matrix using MPI
+def main():
+
+comm = MPI.COMM_WORLD
+size = comm.Get_size()
+rank = comm.Get_rank()
+startT=MPI.Wtime()
+
+rowsize=len(Matrix1)
+vpsize= int(rowsize/size) #defining the chunk size
+startindex=rank*vpsize
+endindex=(rank+1)*vpsize #calculating limits
+root=0
+op=MPI.SUM
+               
+R= multiplication(startindex,endindex)
+recvdata=comm.reduce (R,root=root,op=op) # Reduce is a classic concept from functional programming.
+comm.Barrier() # Synchronization operation. 
+    if (rank==0):
+        endTime=MPI.Wtime()- startT
+        print ("Time consumed: "+str(endTime))
+        print(recvdata)
